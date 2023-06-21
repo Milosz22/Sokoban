@@ -11,8 +11,11 @@ import Render
 updateWorld :: Float -> World -> World
 updateWorld _ = id -- Placeholder
 
+
+
+
 window :: Display
-window = InWindow "Game" (600, 500) (0, 0)
+window = InWindow "Game" (windowWidth, windowHeight) (0, 0)
 
 background :: Color
 background = white
