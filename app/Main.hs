@@ -11,9 +11,6 @@ import Render
 updateWorld :: Float -> World -> World
 updateWorld _ = id -- Placeholder
 
-
-
-
 window :: Display
 window = InWindow "Game" (windowWidth, windowHeight) (0, 0)
 

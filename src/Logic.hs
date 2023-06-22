@@ -16,23 +16,27 @@ movePlayer :: Direction -> Position -> Position
 movePlayer (dx, dy) (x, y) = (x + dx, y + dy)
 
 handleEventWorld :: Event -> World -> World
-handleEventWorld (EventKey (Char 'x') Down _ _) world@(World {gameState = LevelCompleted, gameMaps = _:maps}) = 
-  world { gameState = Playing, gameMaps = maps, player = startingPosition, boxes = initialBoxes }
-  where
-    startingPosition = (6,2) -- miejsce startowe na nowym poziomie
-    initialBoxes =  S.fromList [(4, 3)]     -- początkowe pozycje skrzyń na nowym poziomie
+handleEventWorld (EventKey (Char 'x') Down _ _) world@(World {gameState = LevelCompleted, gameMaps = maps, level = lvl,startPos=stP,boxesPos=bPos, moves = mv, totalMoves = tMv, ..}) = 
+  case stP of 
+    ([]) -> world 
+    (startingPosition:rest) -> 
+      case rest of 
+        []->world { totalMoves=(mv+tMv),moves=0,gameState = LevelCompleted, gameMaps = tail maps, player = startingPosition, boxes = head bPos ,level= (lvl+1),startPos=rest,boxesPos = tail bPos,gameOver=True }-- nie ma wiecej map i gra sie konczy
+        _ -> world { totalMoves=(mv+tMv),moves=0,gameState =Playing, gameMaps = tail maps, player = startingPosition, boxes = head bPos ,level= (lvl+1),startPos=rest,boxesPos = tail bPos } 
 
-handleEventWorld event world =
-  case event of
-    EventKey (SpecialKey KeyUp) Down _ _ -> movePlayerInWorld (0, 1) world
-    EventKey (SpecialKey KeyDown) Down _ _ -> movePlayerInWorld (0, -1) world
-    EventKey (SpecialKey KeyLeft) Down _ _ -> movePlayerInWorld (-1, 0) world
-    EventKey (SpecialKey KeyRight) Down _ _ -> movePlayerInWorld (1, 0) world
-    _ -> world -- Do nothing for other events
+
+
+
+handleEventWorld (EventKey (SpecialKey KeyUp) Down _ _) world@(World {gameState = Playing, ..}) = movePlayerInWorld (0,1) world
+handleEventWorld (EventKey (SpecialKey KeyDown) Down _ _) world@(World {gameState = Playing, ..}) = movePlayerInWorld (0,-1) world
+handleEventWorld (EventKey (SpecialKey KeyLeft) Down _ _) world@(World {gameState = Playing, ..}) = movePlayerInWorld (-1,0) world
+handleEventWorld (EventKey (SpecialKey KeyRight) Down _ _) world@(World {gameState = Playing, ..}) = movePlayerInWorld (1,0) world
+handleEventWorld _ world = world  -- In case of other events
 
 movePlayerInWorld :: Direction -> World -> World
 movePlayerInWorld dir world@(World {gameState = LevelCompleted, ..}) = world
-movePlayerInWorld dir world@(World {..}) =
+movePlayerInWorld dir world@(World {moves=mv,..}) =
+
   let newPos = movePlayer dir player
       row = S.lookup (snd newPos) (head gameMaps)
   in case row of
@@ -60,11 +64,11 @@ movePlayerInWorld dir world@(World {..}) =
                                     let boxIndex = S.findIndexL (== newPos) boxes
                                     in case boxIndex of
                                          Nothing -> world
-                                         Just i -> world { player = newPos, boxes = S.update i newBoxPos boxes }
+                                         Just i -> world { player = newPos, boxes = S.update i newBoxPos boxes, moves= (mv+1) }
                                   else world
                   else if t == Exit
-                       then world { player = newPos, gameState = LevelCompleted }
-                       else world { player = newPos }
+                       then world { player = newPos, gameState = LevelCompleted ,moves= (mv+1)}
+                       else world { player = newPos,moves=(mv+1) }
                 else world
 
 tileIsPassable :: Tile -> Bool

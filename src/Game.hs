@@ -20,13 +20,29 @@ type Position = (Int, Int)
 
 data World = World { 
   gameMaps :: [Map], 
+  startPos :: [Position],
+  boxesPos :: [S.Seq Position],
+  level :: Int ,
   player :: Position, 
   boxes :: S.Seq Position,
-  gameState :: GameState
+  gameState :: GameState,
+  gameOver :: Bool,
+  moves :: Int,
+  totalMoves :: Int
   } deriving (Eq, Show)
 
 initialWorld :: World
-initialWorld = World { gameMaps = [initialMap1,initialMap2], player = initialPlayerPosition, boxes = initialBoxPositions , gameState=Playing}
+initialWorld = World { gameMaps = [initialMap1,initialMap2], 
+  player = initialPlayerPosition, 
+  boxes = initialBoxPositions, 
+  boxesPos=[S.fromList [(4, 3)],S.fromList [(4, 3)]] , 
+  gameState=Playing,
+  startPos=[(6,1),(6,2)],
+  level = 0,
+  gameOver = False,
+  moves =0,
+  totalMoves =0
+  }
   where
     initialMap1 = S.reverse $ S.fromList $ map S.fromList $ [[b,b,w,w,w,w,b,b,b],
       [w,w,w,g,g,w,w,w,w],
