@@ -5,7 +5,7 @@ import Game
 import qualified Data.Sequence as S
 import Data.Sequence ((><), (<|), (|>), ViewL(..), ViewR(..), viewl, viewr)
 import Data.Foldable (toList)
-
+import Scores 
 
 tileSize :: Float
 tileSize = 50 
@@ -23,7 +23,29 @@ successTextY =  150
 
 
 
+renderHighScores :: [(String, Int)] -> Picture
+renderHighScores highScores =
+  let
+    lineSpacing = 20
+    toPic (name, score) y = translate 0 y . scale 0.15 0.15 . color black . text $ name ++ ": " ++ show score
+  in pictures $ zipWith toPic highScores [0,-lineSpacing..]
+
+
 render :: World -> Picture
+render world@(World { gameState = InMenu, menu = menu }) =
+  pictures [ buttonPic i | i <- [0..2] ]
+  where
+    buttonPic i =
+      color (if i == menu then green else black) $
+      translate 0 (fromIntegral $ i * 50) $
+      text $ case i of
+        0 -> "Play"
+        1 -> "High scores"
+        2 -> "Exit"
+
+render world@(World {gameState = HighScores,gameOver=False,highScores=hs, ..}) = renderHighScores hs -- do implementacji
+
+
 render world@(World {gameState = LevelCompleted,gameOver=False, ..}) = 
   scale 0.5 0.5 $ translate (- (fromIntegral windowWidth)/2) (- (fromIntegral windowHeight)/2) $ 
   text "Success! Press X to continue."

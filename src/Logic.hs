@@ -15,7 +15,33 @@ type Direction = (Int, Int)
 movePlayer :: Direction -> Position -> Position
 movePlayer (dx, dy) (x, y) = (x + dx, y + dy)
 
+startGame :: World -> World 
+startGame world@(World {gameState=InMenu})=world {gameState=Playing}
+startGame w = w
+
+showHighScores :: World -> World -- do implementacji
+showHighScores world@(World {gameState=InMenu})=world {gameState=HighScores}
+showHighScores w = w
+
+exitGame :: World -> World -- do implementacji
+
+exitGame w = w
+
+
 handleEventWorld :: Event -> World -> World
+
+handleEventWorld (EventKey (SpecialKey KeyUp) Down _ _) world@(World { menu =  selectedButton,gameState=InMenu,.. }) =
+    world { menu =  max 0 (selectedButton - 1) } -- ograniczamy do 0, aby nie wyjść poza górną granicę listy przycisków
+handleEventWorld (EventKey (SpecialKey KeyDown) Down _ _) world@(World { menu =  selectedButton ,gameState=InMenu,..}) =
+    world { menu = min 2 (selectedButton + 1) } -- ograniczamy do 2, aby nie wyjść poza dolną granicę listy przycisków
+handleEventWorld (EventKey (SpecialKey KeyEnter) Down _ _) world@(World { menu =  selectedButton,gameState=InMenu,.. }) =
+    case selectedButton of
+        0 -> startGame world 
+        1 -> showHighScores world 
+        2 -> exitGame world 
+
+
+
 handleEventWorld (EventKey (Char 'x') Down _ _) world@(World {gameState = LevelCompleted, gameMaps = maps, level = lvl,startPos=stP,boxesPos=bPos, moves = mv, totalMoves = tMv, ..}) = 
   case stP of 
     ([]) -> world 

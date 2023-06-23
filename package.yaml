@@ -24,6 +24,7 @@ dependencies:
 - gloss >= 1.13.2.2
 - containers >= 0.6.5.1
 - mtl >= 2.2.2
+- split >= 0.2.3.5
 ghc-options:
 - -Wall
 - -Wcompat

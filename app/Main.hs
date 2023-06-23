@@ -7,6 +7,7 @@ import System.Exit (exitSuccess)
 import Game 
 import Logic
 import Render 
+import Scores
 
 updateWorld :: Float -> World -> World
 updateWorld _ = id -- Placeholder
@@ -21,7 +22,9 @@ fps :: Int
 fps = 60
 
 main :: IO ()
-main = play window background fps initialWorld render handleEventWorld updateWorld
+main = do 
+    initialScores <- loadHighScores "highscores.txt"
+    play window background fps (initialWorld initialScores) render handleEventWorld updateWorld
 
 
 

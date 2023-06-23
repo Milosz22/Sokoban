@@ -10,7 +10,9 @@ windowHeight :: Int
 windowHeight = 500
 
 
-data GameState = Playing | LevelCompleted deriving (Eq, Show)
+data GameState = Playing | LevelCompleted | InMenu | HighScores deriving (Eq, Show)
+data Menu = Menu {selectedButton :: Int } deriving (Eq, Show)
+
 
 data Tile = Wall | Ground | Non | Exit deriving (Eq, Show)
 data Object = Player | Box deriving (Eq, Show)
@@ -28,20 +30,24 @@ data World = World {
   gameState :: GameState,
   gameOver :: Bool,
   moves :: Int,
-  totalMoves :: Int
+  totalMoves :: Int,
+  menu :: Int,
+  highScores :: [(String,Int)]
   } deriving (Eq, Show)
 
-initialWorld :: World
-initialWorld = World { gameMaps = [initialMap1,initialMap2], 
+initialWorld :: [(String,Int)] -> World
+initialWorld scores = World { gameMaps = [initialMap1,initialMap2], 
   player = initialPlayerPosition, 
   boxes = initialBoxPositions, 
   boxesPos=[S.fromList [(4, 3)],S.fromList [(4, 3)]] , 
-  gameState=Playing,
+  gameState=InMenu,
   startPos=[(6,1),(6,2)],
   level = 0,
   gameOver = False,
   moves =0,
-  totalMoves =0
+  totalMoves =0,
+  menu = 0,
+  highScores=scores
   }
   where
     initialMap1 = S.reverse $ S.fromList $ map S.fromList $ [[b,b,w,w,w,w,b,b,b],
