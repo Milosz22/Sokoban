@@ -35,11 +35,13 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      QuickCheck >=2.14.3
+    , base >=4.7 && <5
     , containers >=0.6.5.1
     , deepseq >=1.4.6.1
     , gloss >=1.13.2.2
     , mtl >=2.2.2
+    , random >=1.2.1.1
     , split >=0.2.3.5
   default-language: Haskell2010
 
@@ -51,12 +53,14 @@ executable kartony-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      QuickCheck >=2.14.3
+    , base >=4.7 && <5
     , containers >=0.6.5.1
     , deepseq >=1.4.6.1
     , gloss >=1.13.2.2
     , kartony
     , mtl >=2.2.2
+    , random >=1.2.1.1
     , split >=0.2.3.5
   default-language: Haskell2010
 
@@ -69,11 +73,13 @@ test-suite kartony-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      QuickCheck >=2.14.3
+    , base >=4.7 && <5
     , containers >=0.6.5.1
     , deepseq >=1.4.6.1
     , gloss >=1.13.2.2
     , kartony
     , mtl >=2.2.2
+    , random >=1.2.1.1
     , split >=0.2.3.5
   default-language: Haskell2010
