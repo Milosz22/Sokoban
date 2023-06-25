@@ -8,7 +8,7 @@ import Data.Foldable (toList)
 import Scores 
 
 tileSize :: Float
-tileSize = 50 
+tileSize = 30 
 
 translateX :: Float 
 translateX = -200
@@ -30,29 +30,39 @@ renderHighScores highScores =
     toPic (name, score) y = translate 0 y . scale 0.15 0.15 . color black . text $ name ++ ": " ++ show score
   in pictures $ zipWith toPic highScores [0,-lineSpacing..]
 
+renderIO :: World -> IO Picture
+renderIO world@(World { gameState = InMenu, menu = menu }) = 
+  return $ renderMenu world
 
-render :: World -> Picture
-render world@(World { gameState = InMenu, menu = menu }) =
-  pictures [ buttonPic i | i <- [0..2] ]
+renderIO world@(World { gameState = HighScores, highScores = hs }) = 
+  return $ renderHighScores hs
+
+renderIO world@(World {gameState = LevelCompleted,gameOver=False, ..}) = 
+  return $ renderLevelCompleted world
+
+renderIO world@(World { gameState = Tutorial }) =
+    return $ pictures [ tutorialText1, tutorialText2, tutorialText3,tutorialText4 , tutorialText5]
   where
-    buttonPic i =
-      color (if i == menu then green else black) $
-      translate 0 (fromIntegral $ i * 50) $
-      text $ case i of
-        0 -> "Play"
-        1 -> "High scores"
-        2 -> "Exit"
+    tutorialText1 = translate (-500) 200 $ scale 0.2 0.2 $ text "Move using arrows"
+    tutorialText2 = translate (-500) (-50+200) $ scale 0.2 0.2 $ text "The goal is to reach the yellow square"
+    tutorialText3 = translate (-500) (-100+200) $ scale 0.2 0.2 $ text "R = return to menu, B = reset level"
+    tutorialText4 = translate (-500) (-150+200) $ scale 0.2 0.2 $ text "Press enter when you are ready"
+    tutorialText5 = translate (-500) (-200+200) $ scale 0.2 0.2 $ text "Good luck!"
 
-render world@(World {gameState = HighScores,gameOver=False,highScores=hs, ..}) = renderHighScores hs -- do implementacji
+renderIO world@(World {gameState=Playing,..}) = 
+  return $ renderGame world
 
+renderIO world@(World { gameState = GameOver, nameEntry = playerName, .. }) = 
+  return $ scale 0.5 0.5 $ pictures [ translate (-400) 100 $ text "Success!", translate (-1000) (-100)   $ text "To save the score press y/n"]
 
-render world@(World {gameState = LevelCompleted,gameOver=False, ..}) = 
-  scale 0.5 0.5 $ translate (- (fromIntegral windowWidth)/2) (- (fromIntegral windowHeight)/2) $ 
-  text "Success! Press X to continue."
-render world@(World {gameOver=True, ..}) = 
-  scale 0.5 0.5 $ translate (- (fromIntegral windowWidth)/2) (- (fromIntegral windowHeight)/2) $ 
-  text ("Success! "++ (show totalMoves))
-render world@(World {..}) = pictures $ mapPic ++ playerPic ++ boxesPic ++ [movePic]
+renderIO world@(World { gameState = EnterName, nameEntry = playerName, .. }) = 
+  return $ scale 0.5 0.5 $ pictures [ translate (-1000) 100 $ text $  "Your name: "++playerName
+  , translate (-1000) (-100)   $ text $  "Your score: "++show totalMoves
+  , translate (-1000) (-400)   $ text $  "Press Enter"]
+
+renderGame :: World -> Picture
+renderGame world@(World {..}) = 
+  pictures $ mapPic ++ playerPic ++ boxesPic ++ [movePic]
   where
     mapPic = concatMap drawRow (zip [0..] (toList $ head gameMaps))-- jak lista pusta to program eksploduje, do poprawienia
     drawRow (y, row) = map (drawTile y) (zip [0..] (toList row))
@@ -64,7 +74,40 @@ render world@(World {..}) = pictures $ mapPic ++ playerPic ++ boxesPic ++ [moveP
       Non -> blank
       Exit -> color yellow $ rectangleSolid tileSize tileSize
 
-    playerPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ color blue $ rectangleSolid tileSize tileSize | (x, y) <- [player]]
+    playerPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ moverPic | (x, y) <- [player]]
 
-    boxesPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ color red $ rectangleSolid tileSize tileSize | (x, y) <- toList boxes]
+
+    boxesPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ boxPic | (x, y) <- toList boxes]
+
     movePic = translate ((fromIntegral windowWidth) - 150) ((fromIntegral windowHeight) - 100) $ scale 0.3 0.3 $ text ("Moves: " ++ show moves)
+
+renderLevelCompleted :: World -> Picture
+renderLevelCompleted world@(World {..}) = 
+  scale 0.5 0.5 $ translate (- (fromIntegral windowWidth)/2 -300) (- (fromIntegral windowHeight)/2+200) $ 
+  text "Success! Press X to continue."
+
+
+
+renderMenu :: World -> Picture
+renderMenu world@(World { menu = menu }) =
+  pictures  ( [buttonPic i | i <- [0..2] ])
+  where
+    buttonPic i =
+      let (x, y) = case i of
+            0 -> (-100, 200)
+            1 -> (-350, 0)
+            2 -> (-100, -200)
+      in translate (fromIntegral x) (fromIntegral y) $ -- Przesuwamy każdy przycisk do określonego miejsca
+      color (if i == menu then green else black) $
+      boldText $ case i of
+        0 -> "Play"
+        1 -> "High Scores"
+        2 -> "Exit"
+
+boldText :: String -> Picture
+boldText txt =
+    pictures [
+      translate dx dy $ text txt
+      | dx <- [-1, 0, 1]
+      , dy <- [-1, 0, 1]
+    ]

@@ -1,12 +1,20 @@
 module Scores where 
 import Data.List.Split (splitOn)
 import System.IO
-import Control.Exception (catch, IOException)
+import Control.Exception (catch, IOException,bracket)
+import Data.Maybe
 
 loadHighScores :: FilePath -> IO [(String, Int)]
-loadHighScores path = catch (readFile path >>= return . map readScore . lines) handleErrors
+loadHighScores path = do
+    contents <- readFile path
+    return $ mapMaybe readScore $ lines contents
   where
-    readScore line = let (name:score:_) = splitOn "," line in (name, read score :: Int)
-    handleErrors e = do 
-      putStrLn $ "Error while reading file: " ++ show (e :: IOException)
-      return [] -- return empty list on error
+    readScore :: String -> Maybe (String, Int)
+    readScore "" = Nothing
+    readScore line = case splitOn "," line of
+        [name, score] -> Just (name, read score :: Int)
+        _             -> Nothing
+
+saveScore :: String -> Int -> IO ()
+saveScore name score = do
+   appendFile "highscores.txt" (name ++ "," ++ show score ++ "\n")
