@@ -1,7 +1,0 @@
- milo,25
- abc,17
- blabla,25
- zabcia,29
- zabunia,9
- eluwina,9
- gachigasm,11

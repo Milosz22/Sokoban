@@ -24,9 +24,14 @@ showHighScores world@(World {gameState=InMenu})=world {gameState=HighScores}
 showHighScores w = w
 
 exitGame :: World -> World -- do implementacji
+exitGame world@(World {..})=  world {gameState=Terminate}
+exitGame w =  w
 
-exitGame w = w
-
+insertScore :: (String,Int) -> [(String,Int)] -> [(String,Int)]
+insertScore s [] = [s] -- jeśli lista jest pusta, dodajemy wynik
+insertScore s (x:xs)
+    | snd s < snd x = s:x:xs -- jeśli nowy wynik jest większy lub równy obecnemu, wstawiamy go przed
+    | otherwise      = x:insertScore s xs -- w przeciwnym razie przeszukujemy dalej
 
 
 handleEventWorldIO :: Event -> World -> IO World
@@ -35,11 +40,14 @@ handleEventWorldIO (EventKey (Char c) Down _ _) world@(World {gameState = EnterN
   | c >= 'a' && c <= 'z' =
       let newName = (name) ++ [c] in
       return world { nameEntry = newName }
-handleEventWorldIO (EventKey (SpecialKey KeyEnter) Down _ _) world@(World {gameState = EnterName, nameEntry = n, totalMoves = s,highScores=hs, ..}) =
+handleEventWorldIO (EventKey (SpecialKey KeyEnter) Down _ _) world@(World {gameState = EnterName, nameEntry = n, totalMoves = s, highScores = hs, ..}) =
   do
-    saveScore n s
-    -- return world { gameState = InMenu, nameEntry = "",highScores=hs ++[(n,s)] } -- reset player name
-    return $ initialWorld (Images {boxImage = boxPic,playerImage=moverPic}) (hs ++ [(n,s)])
+    let newScores = insertScore (n, s) hs
+    saveScores newScores
+    return $ initialWorld (Images {boxImage = boxPic,playerImage=moverPic}) newScores
+
+
+
 handleEventWorldIO event world = return $ handleEventWorld event world
 
 
@@ -59,26 +67,23 @@ handleEventWorld (EventKey (SpecialKey KeyEnter) Down _ _) world@(World { menu =
 
 
 
+
+handleEventWorld  (EventKey (Char 'b') Down _ _) world@(World {gameState=Playing,.. }) = world {gameState= Playing ,boxes=head boxesPos,player=head startPos,moves=0}
 handleEventWorld (EventKey (Char 'r') Down _ _) world@(World {..}) = 
   case gameState of
     Playing -> world { gameState = InMenu }
     HighScores -> world { gameState = InMenu}
     _ -> world
 
--- handleEventWorld (EventKey (Char 'r') Down _ _) world@(World {..}) =     przydatny przyklad debugowania na pozniej
---   traceShow gameState $ case gameState of
---     Playing -> world { gameState = InMenu }
---     HighScores -> world { gameState = InMenu}
---     LevelCompleted -> world { gameState = InMenu}
---     _ -> world
 
-handleEventWorld (EventKey (Char 'x') Down _ _) world@(World {gameState = LevelCompleted, gameMaps = maps, level = lvl,startPos=stP,boxesPos=bPos, moves = mv, totalMoves = tMv, ..}) = 
+
+handleEventWorld (EventKey (Char 'x') Down _ _) world@(World {gameState = LevelCompleted, gameMaps = maps, level = lvl,startPos=stP,boxesPos=bPos, moves = mv, totalMoves = tMv,exitsPos=expos,exits=ex, ..}) = 
   case stP of 
     ([]) -> world 
     (startingPosition:rest) -> 
       case rest of 
-        []->world { totalMoves=(mv+tMv),moves=0, gameMaps = tail maps, player = startingPosition, boxes = head bPos ,level= (lvl+1),startPos=rest,boxesPos = tail bPos,gameState=GameOver }-- nie ma wiecej map i gra sie konczy
-        _ -> world { totalMoves=(mv+tMv),moves=0,gameState =Playing, gameMaps = tail maps, player = startingPosition, boxes = head bPos ,level= (lvl+1),startPos=rest,boxesPos = tail bPos } 
+        []->world { exits=head expos,exitsPos=tail expos,totalMoves=(mv+tMv),moves=0, gameMaps = tail maps, player = startingPosition, boxes = head bPos ,level= (lvl+1),startPos=rest,boxesPos = tail bPos,gameState=GameOver }-- nie ma wiecej map i gra sie konczy
+        _ -> world { exits=head $ tail $ expos,exitsPos=tail expos,totalMoves=(mv+tMv),moves=0,gameState =Playing, gameMaps = tail maps, player = head $ tail stP, boxes = head $ tail bPos ,level= (lvl+1),startPos=rest,boxesPos = tail bPos } 
 
 
 
@@ -126,14 +131,18 @@ movePlayerInWorld dir world@(World {moves=mv,..}) =
                                     let boxIndex = S.findIndexL (== newPos) boxes
                                     in case boxIndex of
                                          Nothing -> world
-                                         Just i -> world { player = newPos, boxes = S.update i newBoxPos boxes, moves= (mv+1) }
+                                         Just i -> checkVictory world { player = newPos, boxes = S.update i newBoxPos boxes, moves= (mv+1) }
                                   else world
-                  else if t == Exit
-                       then world { player = newPos, gameState = LevelCompleted ,moves= (mv+1)}
-                       else world { player = newPos,moves=(mv+1) }
+                  else world { player = newPos,moves=(mv+1) }
                 else world
+  where
+    -- Definicja funkcji checkVictory
+    checkVictory :: World -> World
+    checkVictory world@(World {boxes = boxes, exits = exits, ..})
+      | all (`elem` boxes) exits = world { gameState = LevelCompleted }
+      | otherwise = world
 
 tileIsPassable :: Tile -> Bool
 tileIsPassable Ground = True
-tileIsPassable Exit = True
+
 tileIsPassable _ = False

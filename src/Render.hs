@@ -6,7 +6,7 @@ import qualified Data.Sequence as S
 import Data.Sequence ((><), (<|), (|>), ViewL(..), ViewR(..), viewl, viewr)
 import Data.Foldable (toList)
 import Scores 
-
+import System.Exit (exitSuccess)
 tileSize :: Float
 tileSize = 30 
 
@@ -27,13 +27,15 @@ renderHighScores :: [(String, Int)] -> Picture
 renderHighScores highScores =
   let
     lineSpacing = 20
-    toPic (name, score) y = translate 0 y . scale 0.15 0.15 . color black . text $ name ++ ": " ++ show score
+    toPic (name, score) y = translate (-200) (y+300) . scale 0.15 0.15 . color black . text $ name ++ ": " ++ show score
   in pictures $ zipWith toPic highScores [0,-lineSpacing..]
 
 renderIO :: World -> IO Picture
 renderIO world@(World { gameState = InMenu, menu = menu }) = 
   return $ renderMenu world
-
+renderIO world@(World { gameState = Terminate, menu = menu }) = do
+  exitSuccess
+  return $ renderMenu world
 renderIO world@(World { gameState = HighScores, highScores = hs }) = 
   return $ renderHighScores hs
 
@@ -44,7 +46,7 @@ renderIO world@(World { gameState = Tutorial }) =
     return $ pictures [ tutorialText1, tutorialText2, tutorialText3,tutorialText4 , tutorialText5]
   where
     tutorialText1 = translate (-500) 200 $ scale 0.2 0.2 $ text "Move using arrows"
-    tutorialText2 = translate (-500) (-50+200) $ scale 0.2 0.2 $ text "The goal is to reach the yellow square"
+    tutorialText2 = translate (-500) (-50+200) $ scale 0.2 0.2 $ text "The goal is to put each box into a yellow suqare"
     tutorialText3 = translate (-500) (-100+200) $ scale 0.2 0.2 $ text "R = return to menu, B = reset level"
     tutorialText4 = translate (-500) (-150+200) $ scale 0.2 0.2 $ text "Press enter when you are ready"
     tutorialText5 = translate (-500) (-200+200) $ scale 0.2 0.2 $ text "Good luck!"
@@ -62,7 +64,7 @@ renderIO world@(World { gameState = EnterName, nameEntry = playerName, .. }) =
 
 renderGame :: World -> Picture
 renderGame world@(World {..}) = 
-  pictures $ mapPic ++ playerPic ++ boxesPic ++ [movePic]
+  pictures $ mapPic ++ exitsPic ++ playerPic ++ boxesPic ++ [movePic] 
   where
     mapPic = concatMap drawRow (zip [0..] (toList $ head gameMaps))-- jak lista pusta to program eksploduje, do poprawienia
     drawRow (y, row) = map (drawTile y) (zip [0..] (toList row))
@@ -70,16 +72,25 @@ renderGame world@(World {..}) =
 
     drawSpecificTile tile = case tile of
       Wall -> color black $ rectangleSolid tileSize tileSize
-      Ground -> color white $ rectangleSolid tileSize tileSize
+      Ground -> pictures [
+        color white $ rectangleSolid tileSize tileSize,
+        color black $ rectangleWire (tileSize ) (tileSize )]
+
       Non -> blank
-      Exit -> color yellow $ rectangleSolid tileSize tileSize
+
 
     playerPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ moverPic | (x, y) <- [player]]
 
+    exitsPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ 
+      pictures [
+        color yellow $ rectangleSolid (tileSize) (tileSize),
+        color black $ rectangleWire (tileSize ) (tileSize )
+      ]
+      | (x, y) <- toList exits ]
 
     boxesPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ boxPic | (x, y) <- toList boxes]
 
-    movePic = translate ((fromIntegral windowWidth) - 150) ((fromIntegral windowHeight) - 100) $ scale 0.3 0.3 $ text ("Moves: " ++ show moves)
+    movePic = translate (300) (300) $ scale 0.3 0.3 $ text ("Moves: " ++ show moves)
 
 renderLevelCompleted :: World -> Picture
 renderLevelCompleted world@(World {..}) = 
