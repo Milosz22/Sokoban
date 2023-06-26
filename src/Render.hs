@@ -28,7 +28,8 @@ renderHighScores highScores =
   let
     lineSpacing = 20
     toPic (name, score) y = translate (-200) (y+300) . scale 0.15 0.15 . color black . text $ name ++ ": " ++ show score
-  in pictures $ zipWith toPic highScores [0,-lineSpacing..]
+    returnPic = translate (300) (-300) $ scale 0.3 0.3 $ text ("R to return")
+  in pictures $ (zipWith toPic highScores [0,-lineSpacing..])++[returnPic]
 
 renderIO :: World -> IO Picture
 renderIO world@(World { gameState = InMenu, menu = menu }) = 
@@ -64,7 +65,7 @@ renderIO world@(World { gameState = EnterName, nameEntry = playerName, .. }) =
 
 renderGame :: World -> Picture
 renderGame world@(World {..}) = 
-  pictures $ mapPic ++ exitsPic ++ playerPic ++ boxesPic ++ [movePic] 
+  pictures $ mapPic ++ exitsPic ++ playerPic ++ boxesPic ++ [movePic,returnPic] 
   where
     mapPic = concatMap drawRow (zip [0..] (toList $ head gameMaps))-- jak lista pusta to program eksploduje, do poprawienia
     drawRow (y, row) = map (drawTile y) (zip [0..] (toList row))
@@ -91,7 +92,7 @@ renderGame world@(World {..}) =
     boxesPic = [ translate (translateX + tileSize * fromIntegral x) (translateY + tileSize * fromIntegral y) $ boxPic | (x, y) <- toList boxes]
 
     movePic = translate (300) (300) $ scale 0.3 0.3 $ text ("Moves: " ++ show moves)
-
+    returnPic = translate (300) (-300) $ scale 0.3 0.3 $ text ("B to restart")
 renderLevelCompleted :: World -> Picture
 renderLevelCompleted world@(World {..}) = 
   scale 0.5 0.5 $ translate (- (fromIntegral windowWidth)/2 -300) (- (fromIntegral windowHeight)/2+200) $ 
